@@ -54,6 +54,14 @@ jobs:
             || { echo "::error::auth init line changed in $f - update this step"; exit 1; }
           sed -i 's#export const auth = await getAuth();#export const auth = await getAuth().catch(() => ({}) as Awaited<ReturnType<typeof getAuth>>);#' "$f"
 
+      - name: Patch - force auth-gated layouts dynamic at build (ephemeral)
+        run: |
+          for f in "app/(auth)/layout.tsx" "app/(root)/layout.tsx"; do
+            [ -f "$f" ] || { echo "::error::missing $f - upstream layout moved"; exit 1; }
+            grep -q "export const dynamic" "$f" \
+              || sed -i '1i export const dynamic = "force-dynamic";' "$f"
+          done
+
       - name: Write hardened multi-stage Dockerfile (ephemeral)
         run: |
           cat > Dockerfile.ci <<'EOF'
