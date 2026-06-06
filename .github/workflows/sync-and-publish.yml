@@ -47,6 +47,13 @@ jobs:
           grep -q 'output: "standalone"' "$f" \
             || { echo "::error::failed to inject standalone output"; exit 1; }
 
+      - name: Patch - defer auth/DB init at build time (ephemeral)
+        run: |
+          f=lib/better-auth/auth.ts
+          grep -q "export const auth = await getAuth();" "$f" \
+            || { echo "::error::auth init line changed in $f - update this step"; exit 1; }
+          sed -i 's#export const auth = await getAuth();#export const auth = await getAuth().catch(() => ({}) as Awaited<ReturnType<typeof getAuth>>);#' "$f"
+
       - name: Write hardened multi-stage Dockerfile (ephemeral)
         run: |
           cat > Dockerfile.ci <<'EOF'
