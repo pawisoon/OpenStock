@@ -1,0 +1,111 @@
+name: sync-and-publish
+
+on:
+  schedule:
+    - cron: "0 4 * * *"      # daily 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: sync-and-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Sync upstream into main (pure mirror)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/Open-Dev-Society/OpenStock.git
+          git fetch upstream
+          git merge --no-edit upstream/main
+          git push origin main
+
+      - name: Patch - Finnhub key to runtime env (ephemeral)
+        run: |
+          f=lib/actions/finnhub.actions.ts
+          grep -q "process.env.NEXT_PUBLIC_FINNHUB_API_KEY" "$f" \
+            || { echo "::error::pattern gone - upstream changed $f"; exit 1; }
+          sed -i 's#process.env.NEXT_PUBLIC_FINNHUB_API_KEY#(process.env.FINNHUB_API_KEY || process.env.NEXT_PUBLIC_FINNHUB_API_KEY)#' "$f"
+
+      - name: Patch - enable standalone output (ephemeral)
+        run: |
+          f=next.config.ts
+          grep -q "output:" "$f" \
+            || sed -i 's#\(const nextConfig: NextConfig = {\)#\1\n    output: "standalone",#' "$f"
+          grep -q 'output: "standalone"' "$f" \
+            || { echo "::error::failed to inject standalone output"; exit 1; }
+
+      - name: Write hardened multi-stage Dockerfile (ephemeral)
+        run: |
+          cat > Dockerfile.ci <<'EOF'
+          # ---- deps ----
+          FROM node:20-alpine AS deps
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm ci || npm install
+
+          # ---- build ----
+          FROM node:20-alpine AS build
+          WORKDIR /app
+          ENV NEXT_TELEMETRY_DISABLED=1
+          COPY --from=deps /app/node_modules ./node_modules
+          COPY . .
+          RUN npx --no-install next build
+
+          # ---- runtime ----
+          FROM node:20-alpine AS runtime
+          WORKDIR /app
+          ENV NODE_ENV=production
+          ENV NEXT_TELEMETRY_DISABLED=1
+          ENV PORT=3000
+          ENV HOSTNAME=0.0.0.0
+          RUN addgroup -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs
+          COPY --from=build /app/public ./public
+          COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
+          COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+          USER nextjs
+          EXPOSE 3000
+          CMD ["node", "server.js"]
+          EOF
+
+      - name: Lowercase owner for GHCR
+        id: o
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ steps.o.outputs.owner }}/openstock:latest
+            ghcr.io/${{ steps.o.outputs.owner }}/openstock:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
