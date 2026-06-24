@@ -52,11 +52,12 @@ Note: OpenStock is community-built and not a brokerage. Market data may be delay
 7. 🔐 [Environment Variables](#environment-variables)
 8. 🧱 [Project Structure](#project-structure)
 9. 📡 [Data & Integrations](#data--integrations)
-10. 🧪 [Scripts & Tooling](#scripts--tooling)
-11. 🤝 [Contributing](#contributing)
-12. 🛡️ [Security](#security)
-13. 📜 [License](#license)
-14. 🙏 [Acknowledgements](#acknowledgements)
+10. 🌍 [Market Support](#market-support)
+11. 🧪 [Scripts & Tooling](#scripts--tooling)
+12. 🤝 [Contributing](#contributing)
+13. 🛡️ [Security](#security)
+14. 📜 [License](#license)
+15. 🙏 [Acknowledgements](#acknowledgements)
 
 ## ✨ Introduction <a name="introduction"></a>
 
@@ -394,6 +395,26 @@ public/assets/images/   # logos and screenshots
 - Email (Nodemailer)
     - Gmail transport. Update credentials or switch to your SMTP provider.
     - Templates for welcome and news summary emails.
+
+
+## 🌍 Market Support <a name="market-support"></a>
+
+OpenStock supports **30+ international stock exchanges** including NSE, LSE, TSX, and more. However, please be aware of important limitations based on our data providers.
+
+**Quick Facts**:
+- ✅ Finnhub supports most global exchanges
+- ⚠️ TradingView free tier has restrictions on emerging markets (India NSE, Vietnam, etc.)
+- 📊 Real-time data for non-US stocks is delayed by 15+ minutes on free tier
+
+**See [MARKET_SUPPORT.md](./MARKET_SUPPORT.md) for**:
+- Complete list of supported exchanges
+- Known limitations and workarounds
+- Why "This symbol is only available on TradingView" appears
+- How to upgrade for broader market coverage
+- Future improvements planned
+
+For the latest supported symbols and exchanges, see [Finnhub's exchange list](https://finnhub.io/docs/api/symbol-lookup).
+
 
 ## 🧪 Scripts & Tooling <a name="scripts--tooling"></a>
 
