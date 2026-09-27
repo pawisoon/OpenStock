@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <b>New from the OpenStock team:</b> <a href="https://www.producthunt.com/products/onto-2?launch=onto-2"><b>Onto is live on Product Hunt</b></a>. It makes your website readable to AI agents. <a href="https://www.producthunt.com/products/onto-2?launch=onto-2"><b>Upvote it here ▲</b></a>
+</p>
+
+<p align="center">
   <b>New from Open Dev Society:</b> <a href="https://github.com/Open-Dev-Society/kitbash"><b>kitbash</b></a>. Before you build, find out which parts already exist on GitHub. Borrow them, adapt them, or write the rest.
 </p>
 
