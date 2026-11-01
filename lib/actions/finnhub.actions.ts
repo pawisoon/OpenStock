@@ -5,11 +5,16 @@ import { POPULAR_STOCKS } from '@/lib/constants';
 import { cache } from 'react';
 import { QUOTE_TTL_SECONDS } from '@/lib/market-data';
 import { hasFinnhubQuotes } from '@/lib/markets';
+import { getYahooDailyQuotes } from '@/lib/actions/yahoo.actions';
+import { isTadawulSymbol } from '@/lib/yahoo';
 import { getSession } from '@/lib/better-auth/auth';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 // Key pool: each free key has its own 60 req/min, so N keys = N x the quota. Rotated per request.
-const FINNHUB_KEYS = (process.env.FINNHUB_API_KEYS || process.env.NEXT_PUBLIC_FINNHUB_API_KEY || process.env.FINNHUB_API_KEY || '')
+// Read through an alias: `next build` freezes a literal process.env.NEXT_PUBLIC_* into the bundle, so Docker and
+// Railway images (built without secrets) would ignore a NEXT_PUBLIC_FINNHUB_API_KEY set at runtime.
+const env = process.env;
+const FINNHUB_KEYS = (env.FINNHUB_API_KEYS || env.NEXT_PUBLIC_FINNHUB_API_KEY || env.FINNHUB_API_KEY || '')
     .split(',')
     .map((k) => k.trim())
     .filter(Boolean);
@@ -36,6 +41,12 @@ type FinnhubQuote = {
     t?: number;  // unix time of the last trade
 };
 
+type FinnhubStockMetrics = {
+    metric?: {
+        dividendYieldIndicatedAnnual?: number | null;
+    };
+};
+
 type FinnhubCompanyProfile = {
     currency?: string;
     exchange?: string;
@@ -54,7 +65,7 @@ type SearchStockCandidate = FinnhubSearchResult & {
 const FINNHUB_EXCHANGE_SUFFIXES = new Set([
     'AS', 'AT', 'AX', 'BA', 'BK', 'BO', 'BR', 'CO', 'DE', 'F', 'HE', 'HK',
     'IL', 'IS', 'JK', 'JO', 'KL', 'KQ', 'KS', 'L', 'LS', 'MC', 'MI', 'MX',
-    'NS', 'NZ', 'OL', 'PA', 'PR', 'SA', 'SI', 'SS', 'ST', 'SW', 'SZ', 'T',
+    'NS', 'NZ', 'OL', 'PA', 'PR', 'SA', 'SI', 'SR', 'SS', 'ST', 'SW', 'SZ', 'T',
     'TA', 'TO', 'TW', 'TWO', 'V', 'VI', 'WA',
 ]);
 
@@ -193,11 +204,35 @@ export async function getCompanyProfile(symbol: string) {
     }
 }
 
+export async function getStockMetrics(symbol: string): Promise<number | null> {
+    if (FINNHUB_KEYS.length === 0) {
+        console.error('FINNHUB API key is not configured');
+        return null;
+    }
+
+    try {
+        const url = `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(symbol)}&metric=all`;
+        const data = await fetchJSON<FinnhubStockMetrics>(url, 3600);
+        const dividendYield = data?.metric?.dividendYieldIndicatedAnnual;
+        return typeof dividendYield === 'number' && Number.isFinite(dividendYield)
+            ? dividendYield
+            : null;
+    } catch (error) {
+        logFailure('stock metrics', symbol, error);
+        return null;
+    }
+}
+
 export async function getWatchlistData(symbols: string[]) {
     if (!symbols || symbols.length === 0) return [];
 
+    // Finnhub free doesn't price Tadawul; Yahoo does (delayed)
+    const saudi = await getYahooDailyQuotes(symbols.filter(isTadawulSymbol));
+
     // Fetch quotes and profiles in parallel
     const promises = symbols.map(async (sym) => {
+        const y = saudi[sym];
+        if (y) return { symbol: sym, price: y.price, change: y.change, changePercent: y.changePercent, currency: y.currency, name: y.name || sym, logo: undefined, marketCap: undefined, peRatio: 0 };
         const covered = hasFinnhubQuotes(sym);
         const [quote, profile] = covered
             ? await Promise.all([getQuote(sym, LIVE_QUOTE_TTL), getCompanyProfile(sym)])
