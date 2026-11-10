@@ -1,3 +1,5 @@
+import { NonRetriableError } from "inngest";
+import mongoose from "mongoose";
 import { inngest } from "@/lib/inngest/client";
 import { NEWS_SUMMARY_EMAIL_PROMPT, PERSONALIZED_WELCOME_EMAIL_PROMPT } from "@/lib/inngest/prompts";
 import { sendNewsSummaryEmail, sendStockAlertEmail, sendWelcomeEmail } from "@/lib/nodemailer";
@@ -5,6 +7,7 @@ import { getAllUsersForNewsEmail, getWatchlistSymbolsByEmail } from "@/lib/actio
 import { getNews } from "@/lib/actions/finnhub.actions";
 import { getFormattedTodayDate } from "@/lib/utils";
 import { callAIProviderWithFallback } from "@/lib/ai-provider";
+import { getEmailTranslator } from "@/lib/nodemailer/i18n";
 
 export const sendSignUpEmail = inngest.createFunction(
     { id: 'sign-up-email', triggers: [{ event: 'app/user.created' }] },
@@ -16,7 +19,10 @@ export const sendSignUpEmail = inngest.createFunction(
             - Preferred industry: ${event.data.preferredIndustry}
         `
 
+        // Sign-up sends the locale it was made in; older events have none and stay English
+        const { lang, t } = await getEmailTranslator(event.data.locale);
         const prompt = PERSONALIZED_WELCOME_EMAIL_PROMPT.replace('{{userProfile}}', userProfile)
+            + (lang === 'pl' ? '\n\nWrite the intro in Polish.' : lang === 'ar' ? '\n\nWrite the intro in Arabic.' : '')
 
 
         const introText = await step.run('generate-welcome-intro', async () => {
@@ -24,7 +30,7 @@ export const sendSignUpEmail = inngest.createFunction(
                 return await callAIProviderWithFallback(prompt);
             } catch (error) {
                 console.error("⚠️ All AI providers failed for welcome email", error);
-                return 'Thanks for joining Openstock. You now have the tools to track markets and make smarter moves.';
+                return t('welcome.fallbackIntro');
             }
         });
 
@@ -35,7 +41,7 @@ export const sendSignUpEmail = inngest.createFunction(
                 // introText is already a plain string from the AI provider
 
                 console.log(`📧 Attempting to send welcome email to: ${email}`);
-                const result = await sendWelcomeEmail({ email, name, intro: introText });
+                const result = await sendWelcomeEmail({ email, name, intro: introText, locale: lang });
                 if (result.status !== 'sent') {
                     console.log(`Welcome email skipped for: ${email}`);
                     return result;
@@ -187,7 +193,11 @@ export const sendWeeklyNewsSummary = inngest.createFunction(
             `;
 
             console.log(`📢 Sending Weekly News Broadcast to all subscribers`);
-            const broadcastResult = await kit.sendBroadcast(subject, content);
+            const broadcastResult = await kit.sendBroadcast(subject, content).catch((e) => {
+                // A retry would only save another draft until the sender address is confirmed in Kit
+                if (e instanceof Error && e.message.includes('saved as a draft')) throw new NonRetriableError(e.message);
+                throw e;
+            });
             console.log("👉 Kit API Response:", JSON.stringify(broadcastResult, null, 2));
             return { success: true, kitResponse: broadcastResult };
         })
@@ -203,9 +213,9 @@ export const checkStockAlerts = inngest.createFunction(
         const activeAlerts = await step.run('fetch-active-alerts', async () => {
             // Dynamic import to avoid circular dep issues if any, or just standard import
             const { connectToDatabase } = await import("@/database/mongoose");
-            const { Alert } = await import("@/database/models/alert.model");
+            const { alertModel } = await import("@/database/models/alert.model");
 
-            await connectToDatabase();
+            const Alert = alertModel(await connectToDatabase());
             const now = new Date();
 
             return await Alert.find({
@@ -266,10 +276,11 @@ export const checkStockAlerts = inngest.createFunction(
         if (triggeredAlerts.length > 0) {
             await step.run('process-triggered-alerts', async () => {
                 const { connectToDatabase } = await import("@/database/mongoose");
-                const { Alert } = await import("@/database/models/alert.model");
-                const mongoose = await connectToDatabase();
-                const db = mongoose.connection.db;
+                const { alertModel } = await import("@/database/models/alert.model");
+                const handle = await connectToDatabase();
+                const db = handle.connection.db;
                 if (!db) throw new Error("No DB Connection");
+                const Alert = alertModel(handle);
 
                 for (const { alert, currentPrice } of triggeredAlerts) {
                     // Claim the alert atomically before emailing. Inngest's concurrency limits steps, not

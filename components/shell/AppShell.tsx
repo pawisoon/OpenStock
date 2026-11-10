@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Sidebar from "@/components/shell/Sidebar";
 import TabBar from "@/components/shell/TabBar";
 import SearchCommand from "@/components/SearchCommand";
@@ -16,6 +17,7 @@ type AppShellProps = {
 };
 
 const AppShell = ({ user, watchlist, initialStocks, children }: AppShellProps) => {
+    const t = useTranslations('UpdateBanner');
     const pathname = usePathname();
     const [navOpen, setNavOpen] = useState(false);
     const workspaceRef = useRef<HTMLElement>(null);
@@ -30,8 +32,9 @@ const AppShell = ({ user, watchlist, initialStocks, children }: AppShellProps) =
         <div className="shell">
             <div
                 className={cn(
-                    'min-h-0 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[272px] max-lg:transition-transform max-lg:duration-200',
-                    navOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full',
+                    // The drawer slides in from the reading side: the right in Arabic
+                    'min-h-0 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:rtl:left-auto max-lg:rtl:right-0 max-lg:z-50 max-lg:w-[272px] max-lg:transition-transform max-lg:duration-200',
+                    navOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full',
                 )}
             >
                 <Sidebar user={user} watchlist={watchlist} />
@@ -45,7 +48,7 @@ const AppShell = ({ user, watchlist, initialStocks, children }: AppShellProps) =
                     <TabBar onMenu={() => setNavOpen(true)} />
                     <main ref={workspaceRef} className={cn('workspace', pathname === '/dashboard' && 'is-first-tab')}>
                         <div className="workspace-inner">
-                            <UpdateBanner />
+                            <UpdateBanner labels={{ new: t('new'), seeWhatsNew: t('seeWhatsNew'), fullChangelog: t('fullChangelog') }} />
                             {children}
                         </div>
                     </main>

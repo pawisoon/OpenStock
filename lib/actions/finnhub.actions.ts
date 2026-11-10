@@ -4,10 +4,11 @@ import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_STOCKS } from '@/lib/constants';
 import { cache } from 'react';
 import { QUOTE_TTL_SECONDS } from '@/lib/market-data';
-import { hasFinnhubQuotes } from '@/lib/markets';
+import { hasFinnhubCompanyData, hasFinnhubQuotes } from '@/lib/markets';
 import { getYahooDailyQuotes } from '@/lib/actions/yahoo.actions';
-import { isTadawulSymbol } from '@/lib/yahoo';
+import { isYahooSymbol } from '@/lib/yahoo';
 import { getSession } from '@/lib/better-auth/auth';
+import { getTranslations } from 'next-intl/server';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 // Key pool: each free key has its own 60 req/min, so N keys = N x the quota. Rotated per request.
@@ -193,7 +194,7 @@ export async function getLiveQuotes(symbols: string[]) {
 
 export async function getCompanyProfile(symbol: string) {
     // Profiles exist for stocks Finnhub free covers; crypto pairs and non-US listings have none
-    if (symbol.includes(':') || !hasFinnhubQuotes(symbol)) return null;
+    if (!hasFinnhubCompanyData(symbol)) return null;
     try {
         const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(symbol)}`;
         // Cache profile for 24 hours
@@ -205,6 +206,7 @@ export async function getCompanyProfile(symbol: string) {
 }
 
 export async function getStockMetrics(symbol: string): Promise<number | null> {
+    if (!hasFinnhubCompanyData(symbol)) return null;
     if (FINNHUB_KEYS.length === 0) {
         console.error('FINNHUB API key is not configured');
         return null;
@@ -226,12 +228,12 @@ export async function getStockMetrics(symbol: string): Promise<number | null> {
 export async function getWatchlistData(symbols: string[]) {
     if (!symbols || symbols.length === 0) return [];
 
-    // Finnhub free doesn't price Tadawul; Yahoo does (delayed)
-    const saudi = await getYahooDailyQuotes(symbols.filter(isTadawulSymbol));
+    // Finnhub free doesn't price Tadawul or Warsaw; Yahoo does (delayed)
+    const yahoo = await getYahooDailyQuotes(symbols.filter(isYahooSymbol));
 
     // Fetch quotes and profiles in parallel
     const promises = symbols.map(async (sym) => {
-        const y = saudi[sym];
+        const y = yahoo[sym];
         if (y) return { symbol: sym, price: y.price, change: y.change, changePercent: y.changePercent, currency: y.currency, name: y.name || sym, logo: undefined, marketCap: undefined, peRatio: 0 };
         const covered = hasFinnhubQuotes(sym);
         const [quote, profile] = covered
@@ -263,9 +265,13 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
         }
         const cleanSymbols = (symbols || [])
             .map((s) => s?.trim().toUpperCase())
-            .filter((s): s is string => Boolean(s));
+            .filter((s): s is string => Boolean(s) && hasFinnhubCompanyData(s));
 
         const maxArticles = 6;
+        // Labels for articles without a source; English if there is no locale to read (e.g. a background job)
+        const t = await getTranslations('NewsSources').catch(() => null);
+        const companySource = t?.('companyNews');
+        const marketSource = t?.('marketNews');
 
         // If we have symbols, try to fetch company news per symbol and round-robin select
         if (cleanSymbols.length > 0) {
@@ -293,7 +299,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
                     if (list.length === 0) continue;
                     const article = list.shift();
                     if (!article || !validateArticle(article)) continue;
-                    collected.push(formatArticle(article, true, sym, round));
+                    collected.push(formatArticle(article, true, sym, round, companySource));
                     if (collected.length >= maxArticles) break;
                 }
                 if (collected.length >= maxArticles) break;
@@ -322,7 +328,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
             if (unique.length >= 20) break; // cap early before final slicing
         }
 
-        const formatted = unique.slice(0, maxArticles).map((a, idx) => formatArticle(a, false, undefined, idx));
+        const formatted = unique.slice(0, maxArticles).map((a, idx) => formatArticle(a, false, undefined, idx, marketSource));
         return formatted;
     } catch (err) {
         console.error('getNews error:', err);

@@ -1,10 +1,8 @@
 import { headers } from "next/headers";
-import { connectToDatabase } from "@/database/mongoose";
+import { connectToDatabase, isWorkersRuntime } from "@/database/mongoose";
 
 type Counter = { _id: string; count: number; expiresAt: Date };
 let ttlIndex: Promise<unknown> | null = null;
-
-export const TOO_MANY_ATTEMPTS = 'Too many attempts. Please wait a few minutes and try again.';
 
 // Fixed-window counters in MongoDB, shared by every server instance (an in-memory limit resets per serverless
 // instance). better-auth's own limiter only runs on its /api/auth routes, not on auth.api calls from server actions.
@@ -32,8 +30,10 @@ export async function isRateLimited(key: string, max: number, windowSeconds: num
 }
 
 // Vercel and most proxies put the client first in x-forwarded-for. Self-hosted without a proxy the header can be
-// forged, which is why every IP limit is paired with a per-account one.
+// forged, which is why every IP limit is paired with a per-account one. On Workers the client's own x-forwarded-for
+// comes first, so trust only cf-connecting-ip there (Cloudflare overwrites it).
 export async function clientIp(): Promise<string> {
     const h = await headers();
+    if (isWorkersRuntime()) return h.get('cf-connecting-ip') || 'unknown';
     return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown';
 }
