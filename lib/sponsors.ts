@@ -11,7 +11,6 @@ export type Sponsor = {
     blurb?: string;      // one line for the floating banner on the landing page
     tier?: SponsorTierId;
     period?: string;     // e.g. "2026"
-    hideInFooter?: true; // past sponsor kept off the footer band (still on /love and in the README)
 };
 
 export type SponsorTierId = 'backer' | 'supporter' | 'company' | 'partner';
@@ -64,16 +63,17 @@ export const SPONSOR_TIERS: {
 
 export const ACTIVE_SPONSORS: Sponsor[] = [
     { name: 'Orbit', url: 'https://github.com/diip3sh/orbit', logo: '/assets/icons/orbit.png', iconOnly: true, tier: 'partner', blurb: 'Free, open-source screen recorder and video editor for macOS.' },
+    { name: 'Swiftproxy', url: 'https://www.swiftproxy.net/?ref=OpenStock', logo: '/assets/images/swiftproxy-logo.png', tier: 'company', blurb: '90M+ residential IPs across 220+ locations, with free testing and 10% off using code PROXY90.' },
 ];
 
 export const PREVIOUS_SPONSORS: Sponsor[] = [
     { name: 'Atlas Cloud', url: 'https://www.atlascloud.ai', logo: '/assets/icons/atlascloud.svg', tier: 'partner' },
     { name: 'Siray.ai', url: 'https://www.siray.ai', logo: '/assets/icons/siray.svg', tier: 'partner', period: '2026' },
-    { name: 'RapidProxy', url: 'https://www.rapidproxy.io', logo: '/assets/icons/rapidproxy.png', tier: 'company', period: '2026', hideInFooter: true },
+    { name: 'RapidProxy', url: 'https://www.rapidproxy.io', logo: '/assets/icons/rapidproxy.png', tier: 'company', period: '2026' },
 ];
 
-// People who sponsored publicly on GitHub (private sponsors stay anonymous). Avatars come from GitHub.
-export const SUPPORTERS: { name: string; login: string }[] = [
+// People who used to sponsor publicly on GitHub (private sponsors stay anonymous). Avatars come from GitHub.
+export const PREVIOUS_SUPPORTERS: { name: string; login: string }[] = [
     { name: 'Jonas Gunklach', login: 'jonasgunklach' },
     { name: 'Dan Sellars', login: 'xlab-nyc' },
     { name: 'Mangolito', login: 'Mangolito' },
