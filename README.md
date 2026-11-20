@@ -2,9 +2,8 @@
 
 <p align="center"><sub><a href="#sponsors">SPONSORED BY</a></sub></p>
 
-<!-- Link comes from PROXY_SELLER_URL in lib/sponsors.ts. Swap both when the tracking link arrives. -->
 <p align="center">
-  <a href="https://proxy-seller.com/"><img src="public/assets/images/proxy-seller-banner.png" alt="Proxy-Seller: 220+ GEOs, $0.70/GB, 15% off with promo code RAVI" width="420"></a>
+  <a href="https://proxy-seller.com/?partner=0PC6QUN0HW8FI0"><img src="public/assets/images/proxy-seller-banner.png" alt="Proxy-Seller: 220+ GEOs, $0.70/GB, 15% off with promo code RAVI" width="420"></a>
 </p>
 
 <p align="center">
@@ -93,6 +92,7 @@
 - Pick indicators once (SMA, EMA, Bollinger Bands, VWAP, RSI, MACD, Stochastic, ATR) and they stay on every chart.
 - Financials, technicals and the company profile.
 - Sentiment from Reddit, X, news and Polymarket (with an Adanos key).
+- Recent news rated 1 to 10 for relevance, with what each story means for the stock (with an AlphAI key).
 
 **Watchlist and alerts**
 - A watchlist of up to 50 stocks, saved to your account.
@@ -122,7 +122,7 @@ Charts always stream live from TradingView. Quotes, watchlist prices and alerts 
 |---|---|
 | App | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui and Radix |
 | Accounts and data | Better Auth, MongoDB with Mongoose |
-| Market data | Finnhub, TradingView widgets, Adanos (sentiment) |
+| Market data | Finnhub, TradingView widgets, Adanos (sentiment), AlphAI (scored news) |
 | Background jobs | Inngest |
 | Email | Nodemailer (Gmail), Kit for the newsletter |
 | AI | Gemini, MiniMax or Siray |
@@ -161,6 +161,7 @@ Every variable is listed with comments in [`.env.example`](.env.example). The on
 | `NODEMAILER_EMAIL`, `NODEMAILER_PASSWORD` | No | Sending email through Gmail, with an app password. Without them, emails are skipped |
 | `GEMINI_API_KEY` (or MiniMax or Siray) | No | AI-written welcome emails and the news digest |
 | `ADANOS_API_KEY` | No | The sentiment card on stock pages |
+| `ALPHAI_API_KEY` | No | The scored news card on stock pages |
 | `KIT_API_KEY`, `KIT_API_SECRET`, `KIT_WELCOME_FORM_ID` | No | The weekly digest newsletter in Kit |
 | `GOOGLE_CLIENT_ID` / `_SECRET`, `GITHUB_CLIENT_ID` / `_SECRET` | No | Social sign-in. Callbacks: `<BETTER_AUTH_URL>/api/auth/callback/google` and `/github` |
 
@@ -263,6 +264,7 @@ __tests__/        Vitest tests
 - **Finnhub**: search, quotes, company profiles and news. Responses are cached and shared (for an hour, or 15 seconds in realtime mode), with timeouts and a key pool, so a slow upstream never hangs a page.
 - **TradingView**: the chart, heatmap, financials, technicals and profile widgets.
 - **Adanos** (optional): the sentiment card.
+- **AlphAI** (optional): the scored news card.
 - **Better Auth with MongoDB**: accounts and sessions. Pages and server actions check the session on the server; the middleware only redirects signed-out visitors.
 - **Inngest** runs the background jobs:
 
@@ -406,6 +408,7 @@ Because the future belongs to those who build it openly.
 
 - [Finnhub](https://finnhub.io) for accessible market data, and [TradingView](https://www.tradingview.com) for embeddable charts and widgets
 - [Adanos](https://adanos.org) for sentiment data
+- [AlphAI](https://alphai.io) for scored financial news
 - shadcn/ui, Radix UI, Tailwind CSS and the Next.js community
 - [Inngest](https://www.inngest.com) for dependable background jobs, and [Better Auth](https://www.better-auth.com) for simple, secure authentication
 - [Adrian Hajdin (JavaScript Mastery)](https://github.com/adrianhajdin), whose [Stock Market App tutorial](https://www.youtube.com/watch?v=gu4pafNCXng) was where OpenStock started
@@ -436,5 +439,5 @@ Sponsorships are paid through GitHub Sponsors to [@ravixalgorithm](https://githu
 
 Can't sponsor right now? Pick a [good first issue](https://github.com/Open-Dev-Society/OpenStock/issues?q=is%3Aopen+label%3A%22good+first+issue%22), star the repo, or share OpenStock with someone who pays too much for a terminal.
 
-**Current sponsors** are shown at the [top of this README](#readme): [Proxy-Seller](https://proxy-seller.com/) · [Swiftproxy](https://www.swiftproxy.net/?ref=OpenStock) · [Orbit](https://github.com/diip3sh/orbit)
+**Current sponsors** are shown at the [top of this README](#readme): [Proxy-Seller](https://proxy-seller.com/?partner=0PC6QUN0HW8FI0) · [Swiftproxy](https://www.swiftproxy.net/?ref=OpenStock) · [Orbit](https://github.com/diip3sh/orbit)
 **Previously backed by:** [Atlas Cloud](https://www.atlascloud.ai) · [Siray.ai](https://www.siray.ai/) (2026) · [RapidProxy](https://www.rapidproxy.io) (2026)

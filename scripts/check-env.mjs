@@ -53,6 +53,9 @@ const optionalVars = {
     'ADANOS_API_KEY': 'Adanos API key for stock sentiment insights (Reddit, X.com, news, Polymarket)',
     'ADANOS_API_BASE_URL': 'Adanos API base URL override (default: https://api.adanos.org)',
 
+    // AlphAI scored news (optional)
+    'ALPHAI_API_KEY': 'AlphAI API key for the scored news card on stock pages',
+
     // MiniMax (optional AI provider fallback)
     'MINIMAX_API_KEY': 'MiniMax API key (used when AI_PROVIDER=minimax or as fallback)',
     'MINIMAX_MODEL': 'MiniMax model override (default: MiniMax-M3.1-Flash; alternative: MiniMax-M3)',
@@ -254,8 +257,8 @@ if (state.optionalPresent.length === 0) {
 
 console.log('\n' + '='.repeat(70));
 const criticalMissing = state.missing.filter(m => m.severity === 'critical').length;
-const totalRequired = Object.keys(requiredVars).length;
-const presentRequired = state.present.length;
+const totalRequired = Object.keys(requiredVars).length + 1;
+const presentRequired = totalRequired - criticalMissing;
 
 console.log(`Summary: ${presentRequired}/${totalRequired} required variables present`);
 console.log(`Optional variables: ${state.optionalPresent.length}/${Object.keys(optionalVars).length} enabled`);
