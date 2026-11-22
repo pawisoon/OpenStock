@@ -111,11 +111,12 @@ export const getChangeColorClass = (changePercent?: number) => {
     return changePercent > 0 ? 'text-green-500' : 'text-red-500';
 };
 
+// Under a cent (small coins, their moving averages), keep 4 significant digits: $0.00001234, not $0.00
 export const formatPrice = (price: number, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency,
-        minimumFractionDigits: 2,
+        ...(price !== 0 && Math.abs(price) < 0.01 ? { maximumSignificantDigits: 4 } : { minimumFractionDigits: 2 }),
     }).format(price);
 };
 
@@ -229,6 +230,26 @@ const CHART_BLOCKED_EXCHANGES = new Set(['TSE', 'HKEX', 'LSE', 'KRX', 'TWSE', 'S
 export const isChartEmbeddable = (tvSymbol: string) => !CHART_BLOCKED_EXCHANGES.has(tvSymbol.split(':')[0]);
 
 export const tradingViewSymbolUrl = (tvSymbol: string) => `https://www.tradingview.com/symbols/${tvSymbol.replace(':', '-')}/`;
+
+// Finnhub's US symbol list tags each listing with its venue's MIC; TradingView names the same venues its own way.
+// NYSE Arca listings (SPY) live under AMEX on TradingView, Cboe BZX listings (ARKK) under CBOE.
+const US_MIC_TO_TRADINGVIEW_EXCHANGE: Record<string, string> = {
+    XNAS: 'NASDAQ',
+    XNYS: 'NYSE',
+    XASE: 'AMEX',
+    ARCX: 'AMEX',
+    BATS: 'CBOE',
+    OOTC: 'OTC',
+};
+
+export const tradingViewExchangeForMic = (mic?: string | null) => (mic && US_MIC_TO_TRADINGVIEW_EXCHANGE[mic.toUpperCase()]) || null;
+
+// Prefix a bare US ticker with its exchange (AAPL → NASDAQ:AAPL). The technical-analysis widget answers
+// "Permission denied" for bare US tickers and "Invalid symbol" for the wrong exchange, so an unknown one stays bare.
+export function qualifyTradingViewSymbol(tvSymbol: string, exchange: string | null): string {
+    if (!tvSymbol || !exchange || tvSymbol.includes(':')) return tvSymbol;
+    return `${exchange}:${tvSymbol}`;
+}
 
 // Finnhub writes share classes and symbols with - or &; on these exchanges TradingView only knows its own spelling
 // (the Finnhub one shows "This symbol doesn't exist"): BAJAJ-AUTO.NS → BSE:BAJAJ_AUTO, M&M.NS → BSE:M_M,

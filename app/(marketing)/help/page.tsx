@@ -20,6 +20,14 @@ const FAQS = [
         answer: 'Press ⌘K (or Search stocks in the sidebar), open the company, then press Watch. It shows up in your watchlist and in the sidebar.',
     },
     {
+        question: 'Can I sort stocks into lists?',
+        answer: 'Yes. Next to your starred watchlist of up to 50 stocks, you can make up to 10 named lists of 50 each. Add a stock to one with the list button on any watchlist row, or straight from search.',
+    },
+    {
+        question: 'Is OpenStock in my language?',
+        answer: 'The app, the sign-in pages and the emails are in English, Polish and Arabic, with Arabic laid out right to left. OpenStock follows your browser’s language, or pick one from Language in the sidebar. This public site is in English.',
+    },
+    {
         question: 'Where does the market data come from?',
         answer: 'Charts come live from TradingView. Quotes, watchlist prices and alerts come from Finnhub; on this site they refresh hourly and every price shows when it was last traded.',
     },
@@ -29,7 +37,7 @@ const FAQS = [
     },
     {
         question: 'My alert hasn’t fired.',
-        answer: 'Price alerts are part of OpenStock Cloud (or a self-hosted instance in realtime mode). There they are checked every five minutes and emailed to your account address when the price crosses your target. Check the alert’s status on the watchlist page.',
+        answer: 'Price alerts are part of OpenStock Cloud (or a self-hosted instance in realtime mode). There they are checked every five minutes and emailed to your account address when the price crosses your target, or the 20, 50, 100 or 200-day moving average you picked. Check the alert’s status on the watchlist page.',
     },
     {
         question: 'Can I contribute code or designs?',

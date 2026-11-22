@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+    formatPrice,
     formatSymbolForTradingView,
     isChartEmbeddable,
+    qualifyTradingViewSymbol,
+    tradingViewExchangeForMic,
     formatMarketCapValue,
     formatChangePercent,
     getChangeColorClass,
@@ -165,6 +168,19 @@ describe('formatMarketCapValue', () => {
     });
 });
 
+describe('formatPrice', () => {
+    it('keeps two decimals for normal prices', () => {
+        expect(formatPrice(1234.5)).toBe('$1,234.50');
+        expect(formatPrice(0.53)).toBe('$0.53');
+        expect(formatPrice(0)).toBe('$0.00');
+    });
+
+    it('keeps sub-cent prices visible', () => {
+        expect(formatPrice(0.000012345)).toBe('$0.00001235');
+        expect(formatPrice(0.0049)).toBe('$0.0049');
+    });
+});
+
 describe('formatChangePercent', () => {
     it('returns empty string for undefined/null', () => {
         expect(formatChangePercent(undefined)).toBe('');
@@ -245,5 +261,45 @@ describe('isChartEmbeddable', () => {
 
     it('maps Prague to PSECZ, not the Philippine PSE', () => {
         expect(formatSymbolForTradingView('CEZ.PR')).toBe('PSECZ:CEZ');
+    });
+});
+
+describe('tradingViewExchangeForMic', () => {
+    it('maps US listing venues to TradingView exchanges', () => {
+        expect(tradingViewExchangeForMic('XNAS')).toBe('NASDAQ');
+        expect(tradingViewExchangeForMic('XNYS')).toBe('NYSE');
+        expect(tradingViewExchangeForMic('XASE')).toBe('AMEX');
+        expect(tradingViewExchangeForMic('ARCX')).toBe('AMEX');
+        expect(tradingViewExchangeForMic('BATS')).toBe('CBOE');
+        expect(tradingViewExchangeForMic('OOTC')).toBe('OTC');
+        expect(tradingViewExchangeForMic('xnas')).toBe('NASDAQ');
+    });
+
+    it('returns null for unknown or missing venues', () => {
+        expect(tradingViewExchangeForMic('TXSE')).toBeNull();
+        expect(tradingViewExchangeForMic('')).toBeNull();
+        expect(tradingViewExchangeForMic(undefined)).toBeNull();
+        expect(tradingViewExchangeForMic(null)).toBeNull();
+    });
+});
+
+describe('qualifyTradingViewSymbol', () => {
+    it('prefixes a bare US ticker with its exchange', () => {
+        expect(qualifyTradingViewSymbol('AAPL', 'NASDAQ')).toBe('NASDAQ:AAPL');
+        expect(qualifyTradingViewSymbol('SPY', 'AMEX')).toBe('AMEX:SPY');
+        expect(qualifyTradingViewSymbol('BRK.B', 'NYSE')).toBe('NYSE:BRK.B');
+    });
+
+    it('leaves the symbol alone when the exchange is unknown', () => {
+        expect(qualifyTradingViewSymbol('AAPL', null)).toBe('AAPL');
+    });
+
+    it('never re-prefixes a symbol that already has an exchange', () => {
+        expect(qualifyTradingViewSymbol('TSX:RY', 'NYSE')).toBe('TSX:RY');
+        expect(qualifyTradingViewSymbol('BINANCE:BTCUSDT', 'NASDAQ')).toBe('BINANCE:BTCUSDT');
+    });
+
+    it('passes an empty symbol through', () => {
+        expect(qualifyTradingViewSymbol('', 'NASDAQ')).toBe('');
     });
 });

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Bell, CandlestickChart, Command, GitPullRequest, Github, Grid3x3, HeartHandshake, MailOpen, MessagesSquare, Star } from "lucide-react";
+import { ArrowUpRight, Bell, CandlestickChart, Command, FileText, GitPullRequest, Github, Grid3x3, HeartHandshake, Languages, ListChecks, MailOpen, MessagesSquare, Star } from "lucide-react";
 import { MarketDial, MarketStatus } from "@/components/landing/MarketClock";
 import ProductPreview from "@/components/landing/ProductPreview";
 import SectionHead from "@/components/marketing/SectionHead";
@@ -12,11 +12,14 @@ import { DISCORD_URL, GOOD_FIRST_ISSUES_URL, REPO_URL } from "@/lib/constants";
 
 const FEATURES = [
     { icon: CandlestickChart, title: 'Charts that move', body: 'TradingView candles, technicals and financials for any listed company, full screen when you need room.' },
-    { icon: Bell, title: 'Alerts by email', body: 'With OpenStock Cloud, set a target above or below the price. We check every five minutes and write when it crosses.' },
+    { icon: Bell, title: 'Alerts by email', body: 'With OpenStock Cloud, set a target price, or follow the 20, 50, 100 or 200-day moving average. We check every five minutes and write when it crosses.' },
     { icon: MessagesSquare, title: 'Sentiment in one read', body: 'Buzz and bullishness from Reddit, X.com, news and Polymarket, side by side for each stock.' },
-    { icon: Grid3x3, title: 'The whole market', body: 'Sector heatmap, movers and top stories on one screen before the bell.' },
+    { icon: Grid3x3, title: 'The whole market', body: 'Nine markets on one switch: US, India, Germany, Canada, Australia, Saudi Arabia, Poland, crypto and forex, each with index tiles, movers or a heatmap, and top stories.' },
     { icon: Command, title: 'Find anything with ⌘K', body: 'Search every exchange Finnhub covers and open a stock as a tab, like a browser.' },
     { icon: MailOpen, title: 'A Monday digest', body: 'A short, AI-written summary of the week’s news for the stocks you watch.' },
+    { icon: ListChecks, title: 'Lists for every idea', body: 'Star up to 50 stocks, then group them into up to 10 named lists of 50, from any watchlist row or straight from search.' },
+    { icon: Languages, title: 'In your language', body: 'The app, sign-in pages and emails in English, Polish and Arabic, with Arabic laid out right to left.' },
+    { icon: FileText, title: 'Open stock pages', body: 'A chart and the latest SEC filings for every S&P 500 and Nasdaq-100 company, no account needed.' },
 ];
 
 const TIERS = [
@@ -138,7 +141,7 @@ export default async function LandingPage() {
                 <SectionHead
                     kicker="Data"
                     title="Pick how fresh your numbers are."
-                    sub="Charts always stream live from TradingView. Quotes, watchlists and alerts come from Finnhub, and this is how often they update."
+                    sub="Charts come from TradingView: live for most markets, end of day for some, and a link out where TradingView blocks the embed. Quotes, watchlists and alerts come from Finnhub (Saudi and Polish prices from Yahoo Finance, delayed), and this is how often they update."
                 />
                 <div className="grid gap-3 lg:grid-cols-3">
                     {TIERS.map((tier) => (
@@ -175,7 +178,7 @@ export default async function LandingPage() {
                     <SectionHead
                         kicker="Self-host"
                         title="Your server, your keys, live quotes."
-                        sub="Add as many free Finnhub keys as you like: each one adds 60 requests a minute. Switch the data mode to realtime and prices refresh every 15 seconds."
+                        sub="Add as many free Finnhub keys as you like: each one adds 60 requests a minute. Switch the data mode to realtime and prices refresh every 15 seconds. Run it with Docker, on Railway or Vercel, or on Cloudflare Workers (experimental)."
                     />
                     <a href={`${REPO_URL}#docker-setup`} target="_blank" rel="noreferrer" className="btn btn-ghost">Full setup in the README</a>
                 </div>
@@ -217,7 +220,8 @@ export default async function LandingPage() {
 
             <section className="mx-auto mt-28 max-w-[1200px] px-5">
                 <div className="hatch">
-                    <div className="card grid gap-10 p-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:p-12">
+                    {/* Two columns only from lg: at md the stats column was too narrow for "TypeScript" */}
+                    <div className="card grid gap-10 p-5 sm:p-8 md:p-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
                         <div>
                             <p className="kicker text-brand-ink">Open Dev Society</p>
                             <blockquote className="mt-4 text-[26px] font-semibold leading-snug tracking-[-0.03em] md:text-[30px]">
@@ -229,7 +233,7 @@ export default async function LandingPage() {
                             </div>
                         </div>
                         {repo && (
-                            <dl className="grid grid-cols-2 content-end gap-3">
+                            <dl className="grid grid-cols-2 content-end gap-2 sm:gap-3">
                                 {[
                                     ['Stars', formatCount(repo.stars)],
                                     ['Forks', formatCount(repo.forks)],
@@ -238,7 +242,7 @@ export default async function LandingPage() {
                                 ].map(([label, value]) => (
                                     <div key={label} className="bento-tile col-span-1 bg-page">
                                         <dt className="kicker">{label}</dt>
-                                        <dd className="bento-value text-[26px]">{value}</dd>
+                                        <dd className="bento-value text-[18px] sm:text-[26px]">{value}</dd>
                                     </div>
                                 ))}
                             </dl>
